@@ -33,6 +33,7 @@ class Product(Base):
     id = Column(Uuid, primary_key=True)
     name = Column(Text, nullable=False)
     category_id = Column(Uuid, ForeignKey("categories.id"), nullable=True)
+    parent_id = Column(Uuid, nullable=True)
     stock_quantity = Column(Integer, nullable=False, default=0)
     price = Column(Numeric(12,2), nullable=False)
 

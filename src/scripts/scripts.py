@@ -23,10 +23,15 @@ from src.models.models_for_tz import (
 import src.scripts.datagen as dg
 
 
-async def add_client() -> Client:
+async def add_client() -> OrderItem:
+    """
+    Добавляет одного клиента, один заказ и все категории/подкатегории/продукты
+    из dg.gen_product_name(), затем 1..3 позиции заказа.
+    Возвращает последний созданный OrderItem (или None).
+    """
     async with async_session_maker() as session:
+        # --- client ---
         name = dg.gen_people()
-
         client_id = dg.gen_uuid()
         client = Client(
             id=client_id,
@@ -36,71 +41,91 @@ async def add_client() -> Client:
         )
         session.add(client)
         await session.commit()
-        
+
+        # --- order ---
         status = random.choice([
             OrderStatus.new,
             OrderStatus.processing,
             OrderStatus.completed,
             OrderStatus.cancelled,
         ])
-
         order_id = dg.gen_uuid()
         order = Order(
-            id = order_id,
+            id=order_id,
             client_id=client_id,
             status=status,
         )
         session.add(order)
         await session.commit()
 
+        # --- categories + products ---
         category_and_product = dg.gen_product_name()
-        for category_name, products in category_and_product:
-            category_id = dg.gen_uuid()
-            category = Category(
-                id=category_id,
-                name=category_name
-            )
-            session.add(category)
+        # на всякий случай поддержим dict или list
+        if isinstance(category_and_product, dict):
+            category_and_product = list(category_and_product.items())
+
+        all_product_ids = []
+        product_price_map = {}
+        created_category_ids = []
+
+        for top_category_name, subcat_dicts in category_and_product:
+            # создаём топ-категорию
+            top_cat_id = dg.gen_uuid()
+            top_cat = Category(id=top_cat_id, name=top_category_name)
+            session.add(top_cat)
             await session.commit()
+            created_category_ids.append(top_cat_id)
 
-            list_product_id = []
-            product_price = dg.gen_price()
-            for product in products:
-                product_id = dg.gen_uuid()
-                producti = Product(
-                    id=product_id,
-                    name=product,
-                    category_id=category_id,
-                    stock_quantity=random.randint(0, 30),
-                    price=product_price,
-                )
-                session.add(producti)
-                await session.commit()
-                list_product_id.append(product_id)
-               
-        quantity = random.randint(1, 5)
-        order_item = OrderItem(
-            order_id=order_id,
-            product_id=random.choice(list_product_id),
-            quantity=quantity,
-            price_at_order=product_price,
-        )
-        session.add(order_item)
-        await session.commit()
-        await session.refresh(order_item)
-        return order_item
+            # subcat_dicts — это список словарей [{subcat_name: [sku1, sku2]}, ...]
+            for subcat_dict in subcat_dicts:
+                # каждый subcat_dict содержит ровно один ключ: subcategory name
+                for subcat_name, sku_list in subcat_dict.items():
+                    subcat_id = dg.gen_uuid()
+                    subcat = Category(id=subcat_id, name=subcat_name)
+                    session.add(subcat)
+                    await session.commit()
+                    created_category_ids.append(subcat_id)
 
+                    # создаём продукты — для каждого SKU (строка) — свой Product
+                    for sku in sku_list:
+                        product_id = dg.gen_uuid()
+                        price = dg.gen_price()  # цена для конкретного SKU
+                        product = Product(
+                            id=product_id,
+                            name=sku,
+                            category_id=top_cat_id,   # топ-категория
+                            parent_id=subcat_id,      # подкатегория (uuid, без FK)
+                            stock_quantity=random.randint(0, 30),
+                            price=price,
+                        )
+                        session.add(product)
+                        await session.commit()
 
-async def add_all() -> None:
+                        all_product_ids.append(product_id)
+                        product_price_map[product_id] = price
 
-    await add_client()
+        # если вдруг продуктов нет — выходим
+        if not all_product_ids:
+            return None
 
-    print('Данные добавлены')
-
-    # # позиции заказа
-    # for _ in range(records_per_entity * 3):
-    #     await add_order_item()
+        # --- создаём 1..3 позиций в заказе ---
+        created_order_item = None
+        num_items = random.randint(1, 3)
+        chosen = random.sample(all_product_ids, k=min(num_items, len(all_product_ids)))
+        for pid in chosen:
+            qty = random.randint(1, 5)
+            price_at_order = product_price_map[pid]
+            order_item = OrderItem(
+                order_id=order_id,
+                product_id=pid,
+                quantity=qty,
+                price_at_order=price_at_order,
+            )
+            session.add(order_item)
+            await session.commit()
+            await session.refresh(order_item)
 
 
 if __name__ == "__main__":
-    asyncio.run(add_all())
+    asyncio.run(add_client())
+    print('данные добавлены')
