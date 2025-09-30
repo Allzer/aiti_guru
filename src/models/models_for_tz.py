@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import (
-    Column, Integer, String, Text, Numeric, ForeignKey, DateTime, Enum
+    Column, Integer, String, Text, Numeric, ForeignKey, DateTime, Enum, Uuid
 )
 
 import enum
@@ -17,42 +17,39 @@ class OrderStatus(str, enum.Enum):
 
 class Client(Base):
     __tablename__ = "clients"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid, primary_key=True)
     name = Column(Text, nullable=False)
     email = Column(String, unique=True, nullable=True)
     address = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    
 
 class Category(Base):
     __tablename__ = "categories"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid, primary_key=True)
     name = Column(Text, nullable=False)
 
 class Product(Base):
     __tablename__ = "products"
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Uuid, primary_key=True)
     name = Column(Text, nullable=False)
-    sku = Column(String, unique=True, nullable=True)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    category_id = Column(Uuid, ForeignKey("categories.id"), nullable=True)
     stock_quantity = Column(Integer, nullable=False, default=0)
     price = Column(Numeric(12,2), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
     category = relationship("Category")
 
 class Order(Base):
     __tablename__ = "orders"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    client_id = Column(Integer, ForeignKey("clients.id"), nullable=True)
+    id = Column(Uuid, primary_key=True)
+    client_id = Column(Uuid, ForeignKey("clients.id"), nullable=True)
     status = Column(Enum(OrderStatus), default=OrderStatus.new, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
+    
     client = relationship("Client")
 
 class OrderItem(Base):
     __tablename__ = "order_items"
-    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), primary_key=True)
-    product_id = Column(Integer, ForeignKey("products.id"), primary_key=True)
+    order_id = Column(Uuid, ForeignKey("orders.id", ondelete="CASCADE"), primary_key=True)
+    product_id = Column(Uuid, ForeignKey("products.id"), primary_key=True)
     quantity = Column(Integer, nullable=False)
     price_at_order = Column(Numeric(12,2), nullable=False)
 
