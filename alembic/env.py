@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 from database import Base
-# from src.models.models_for_courses import __all__
+from src.models.models_for_tz import Client, Category, Product, Order, OrderItem
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
