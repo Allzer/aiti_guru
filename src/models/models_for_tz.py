@@ -26,6 +26,7 @@ class Client(Base):
 class Category(Base):
     __tablename__ = "categories"
     id = Column(Uuid, primary_key=True)
+    parent_id = Column(Uuid, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     name = Column(Text, nullable=False)
 
 class Product(Base):
@@ -44,6 +45,7 @@ class Order(Base):
     id = Column(Uuid, primary_key=True)
     client_id = Column(Uuid, ForeignKey("clients.id"), nullable=True)
     status = Column(Enum(OrderStatus), default=OrderStatus.new, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     client = relationship("Client")
 

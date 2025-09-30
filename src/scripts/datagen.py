@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import random
 import uuid
 
@@ -147,5 +148,32 @@ def gen_random_email():
     return f"{username}@{random.choice(domains)}"
 
 
-
-    
+def gen_order_created_at():
+    """
+    Возвращает datetime для created_at с распределением:
+      - 50% — случайная дата в предыдущем календарном месяце,
+      - 30% — случайная дата в текущем месяце,
+      - 20% — дата старее, чем предыдущий месяц (60..180 дней назад).
+    Используется UTC (datetime.utcnow()).
+    """
+    now = datetime.utcnow()
+    r = random.random()
+    if r < 0.5:
+        # предыдущий календарный месяц
+        first_of_this_month = datetime(now.year, now.month, 1)
+        last_month_end = first_of_this_month - timedelta(days=1)
+        first_of_last_month = datetime(last_month_end.year, last_month_end.month, 1)
+        days_in_last_month = (last_month_end - first_of_last_month).days
+        d = first_of_last_month + timedelta(days=random.randint(0, days_in_last_month))
+        return d + timedelta(hours=random.randint(0,23), minutes=random.randint(0,59))
+    elif r < 0.8:
+        # текущий месяц, от 1 числа до now
+        first_of_this_month = datetime(now.year, now.month, 1)
+        max_day_offset = max(0, (now - first_of_this_month).days)
+        d = first_of_this_month + timedelta(days=random.randint(0, max_day_offset))
+        return d + timedelta(hours=random.randint(0,23), minutes=random.randint(0,59))
+    else:
+        # старее предыдущего месяца: 60..180 дней назад
+        delta_days = random.randint(60, 180)
+        d = now - timedelta(days=delta_days)
+        return d.replace(hour=random.randint(0,23), minute=random.randint(0,59), second=0, microsecond=0)

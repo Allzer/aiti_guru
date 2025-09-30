@@ -8,6 +8,3 @@ create_db:
 	python create_db.py
 	alembic upgrade head
 	python src\scripts\scripts.py
-
-# create_data:
-# 	python src\scripts\scripts.py
