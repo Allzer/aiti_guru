@@ -1,0 +1,34 @@
+services:
+  pg:
+    image: postgres:15
+    restart: always
+    container_name: 'pg'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: aiti_guru
+    ports:
+      - 5433:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d aiti_guru"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    container_name: 'backend'
+    dns:
+      - "8.8.8.8"
+      - "1.1.1.1"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@pg:5432/aiti_guru
+    ports:
+      - 8000:8000
+    command: sh -c "alembic upgrade head && make create_data && exec python run.py"
+    depends_on:
+      pg:
+        condition: service_healthy
