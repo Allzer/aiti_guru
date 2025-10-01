@@ -1,3 +1,4 @@
+from uuid import UUID
 from pydantic import BaseModel, PositiveInt
 from typing import Optional
 
@@ -30,12 +31,12 @@ class OrderItemCreate(BaseModel):
     product_id: int
     quantity: PositiveInt
 
-class OrderItemOut(BaseModel):
-    order_id: int
-    product_id: int
+class OrderItemResponse(BaseModel):
+    order_id: UUID
+    product_id: UUID
     quantity: int
     price_at_order: float
-    product_name: Optional[str] = None
+    product_name: str
 
-    class Config:
-        orm_mode = True
+class AddItemResponse(OrderItemResponse):
+    created: bool

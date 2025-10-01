@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Product to Order</title>
+    <title>Order Management System</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -22,6 +22,32 @@
             color: #333;
             text-align: center;
             margin-bottom: 30px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            color: #4CAF50;
+            border-bottom: 3px solid #4CAF50;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
         }
         .form-group {
             margin-bottom: 20px;
@@ -52,7 +78,6 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
-            width: 100%;
             transition: background-color 0.3s;
         }
         button:hover {
@@ -61,6 +86,12 @@
         button:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
+        }
+        .button-secondary {
+            background-color: #2196F3;
+        }
+        .button-secondary:hover {
+            background-color: #0b7dda;
         }
         .result {
             margin-top: 20px;
@@ -90,47 +121,155 @@
             margin-bottom: 20px;
             font-size: 14px;
         }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .items-table th, .items-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .items-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .items-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .flex-row {
+            display: flex;
+            gap: 10px;
+            align-items: end;
+        }
+        .flex-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .flex-row button {
+            margin-bottom: 0;
+        }
+        .refresh-btn {
+            background-color: #6c757d;
+            margin-left: 10px;
+        }
+        .refresh-btn:hover {
+            background-color: #5a6268;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #e9ecef !important;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Add Product to Order</h1>
+        <h1>Order Management System</h1>
         
-        <div class="api-info">
-            <strong>API Endpoint:</strong> POST /orders/{order_id}/items<br>
-            <strong>Function:</strong> Adds a product to an order. If the item already exists, increases quantity.
+        <div class="tabs">
+            <button class="tab active" data-tab="add-tab">Add Product to Order</button>
+            <button class="tab" data-tab="view-tab">View Order Items</button>
         </div>
 
-        <form id="addProductForm">
-            <div class="form-group">
-                <label for="orderId">Order ID (UUID):</label>
-                <input type="text" id="orderId" name="orderId" required 
-                       placeholder="e.g., 123e4567-e89b-12d3-a456-426614174000">
+        <div id="add-tab" class="tab-content active">
+            <div class="api-info">
+                <strong>API Endpoint:</strong> POST /orders/{order_id}/items<br>
+                <strong>Function:</strong> Adds a product to an order. If the item already exists, increases quantity.
             </div>
-            
-            <div class="form-group">
-                <label for="productId">Product ID (UUID):</label>
-                <input type="text" id="productId" name="productId" required 
-                       placeholder="e.g., 123e4567-e89b-12d3-a456-426614174000">
-            </div>
-            
-            <div class="form-group">
-                <label for="quantity">Quantity:</label>
-                <input type="number" id="quantity" name="quantity" required 
-                       min="1" value="1">
-            </div>
-            
-            <button type="submit" id="submitBtn">Add Product to Order</button>
-        </form>
 
-        <div class="loading" id="loading">
-            Processing your request...
+            <form id="addProductForm">
+                <div class="form-group">
+                    <label for="orderId">Order ID (UUID):</label>
+                    <input type="text" id="orderId" name="orderId" required 
+                           placeholder="e.g., 123e4567-e89b-12d3-a456-426614174000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="productId">Product ID (UUID):</label>
+                    <input type="text" id="productId" name="productId" required 
+                           placeholder="e.g., 123e4567-e89b-12d3-a456-426614174000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" id="quantity" name="quantity" required 
+                           min="1" value="1">
+                </div>
+                
+                <button type="submit" id="submitBtn">Add Product to Order</button>
+            </form>
+
+            <div class="loading" id="loading">
+                Processing your request...
+            </div>
+
+            <div class="result" id="result"></div>
         </div>
 
-        <div class="result" id="result"></div>
+        <div id="view-tab" class="tab-content">
+            <div class="api-info">
+                <strong>API Endpoint:</strong> GET /orders/{order_id}/items<br>
+                <strong>Function:</strong> View all items in an order with details.
+            </div>
+
+            <div class="flex-row">
+                <div class="form-group">
+                    <label for="viewOrderId">Order ID (UUID):</label>
+                    <input type="text" id="viewOrderId" name="viewOrderId" required 
+                           placeholder="e.g., 123e4567-e89b-12d3-a456-426614174000">
+                </div>
+                <button id="viewOrderBtn" class="button-secondary">View Order Items</button>
+                <button id="refreshBtn" class="refresh-btn">Refresh</button>
+            </div>
+
+            <div class="loading" id="viewLoading">
+                Loading order items...
+            </div>
+
+            <div class="result" id="viewResult"></div>
+
+            <table class="items-table" id="itemsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Total Price</th>
+                    </tr>
+                </thead>
+                <tbody id="itemsTableBody">
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const exampleBtn = document.createElement('button');
+            exampleBtn.textContent = 'Fill with Example Data';
+            exampleBtn.type = 'button';
+            exampleBtn.style.backgroundColor = '#2196F3';
+            exampleBtn.style.marginTop = '10px';
+            exampleBtn.onclick = function() {
+                document.getElementById('orderId').value = '123e4567-e89b-12d3-a456-426614174000';
+                document.getElementById('productId').value = '123e4567-e89b-12d3-a456-426614174001';
+                document.getElementById('quantity').value = '2';
+            };
+            document.getElementById('addProductForm').appendChild(exampleBtn);
+        });
+
         document.getElementById('addProductForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -143,17 +282,17 @@
             const quantity = document.getElementById('quantity').value;
             
             if (!isValidUUID(orderId)) {
-                showResult('Please enter a valid Order UUID', 'error');
+                showResult('Please enter a valid Order UUID', 'error', result);
                 return;
             }
             
             if (!isValidUUID(productId)) {
-                showResult('Please enter a valid Product UUID', 'error');
+                showResult('Please enter a valid Product UUID', 'error', result);
                 return;
             }
             
             if (quantity < 1) {
-                showResult('Quantity must be at least 1', 'error');
+                showResult('Quantity must be at least 1', 'error', result);
                 return;
             }
             
@@ -186,43 +325,103 @@
                         - Price: $${data.price_at_order}<br>
                         - Product Name: ${data.product_name || 'N/A'}<br>
                         - Item ${data.created ? 'Created' : 'Quantity Updated'}
-                    `, 'success');
+                    `, 'success', result);
+                    
+                    if (!document.getElementById('viewOrderId').value) {
+                        document.getElementById('viewOrderId').value = orderId;
+                    }
                 } else {
-                    showResult(`<strong>Error ${response.status}:</strong> ${data.detail}`, 'error');
+                    showResult(`<strong>Error ${response.status}:</strong> ${data.detail}`, 'error', result);
                 }
             } catch (error) {
-                showResult(`<strong>Network Error:</strong> ${error.message}`, 'error');
+                showResult(`<strong>Network Error:</strong> ${error.message}`, 'error', result);
             } finally {
                 submitBtn.disabled = false;
                 loading.style.display = 'none';
             }
         });
+
+        document.getElementById('viewOrderBtn').addEventListener('click', viewOrderItems);
+        document.getElementById('refreshBtn').addEventListener('click', viewOrderItems);
         
-        function showResult(message, type) {
-            const result = document.getElementById('result');
-            result.innerHTML = message;
-            result.className = `result ${type}`;
-            result.style.display = 'block';
+        async function viewOrderItems() {
+            const viewOrderId = document.getElementById('viewOrderId').value.trim();
+            const viewLoading = document.getElementById('viewLoading');
+            const viewResult = document.getElementById('viewResult');
+            const itemsTable = document.getElementById('itemsTable');
+            const itemsTableBody = document.getElementById('itemsTableBody');
+            
+            if (!isValidUUID(viewOrderId)) {
+                showResult('Please enter a valid Order UUID', 'error', viewResult);
+                return;
+            }
+            
+            viewLoading.style.display = 'block';
+            viewResult.style.display = 'none';
+            itemsTable.style.display = 'none';
+            
+            try {
+                const response = await fetch(`/orders/${viewOrderId}/items`);
+                
+                if (response.ok) {
+                    const items = await response.json();
+                    
+                    if (items.length === 0) {
+                        showResult('No items found in this order', 'success', viewResult);
+                        itemsTable.style.display = 'none';
+                    } else {
+                        itemsTableBody.innerHTML = '';
+                        
+                        let totalAmount = 0;
+                        
+                        items.forEach(item => {
+                            const itemTotal = item.quantity * item.price_at_order;
+                            totalAmount += itemTotal;
+                            
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${item.product_name || 'Unknown Product'}</td>
+                                <td>${item.quantity}</td>
+                                <td>$${item.price_at_order.toFixed(2)}</td>
+                                <td>$${itemTotal.toFixed(2)}</td>
+                            `;
+                            itemsTableBody.appendChild(row);
+                        });
+                        
+                        const totalRow = document.createElement('tr');
+                        totalRow.className = 'total-row';
+                        totalRow.innerHTML = `
+                            <td colspan="3"><strong>Total Amount:</strong></td>
+                            <td><strong>$${totalAmount.toFixed(2)}</strong></td>
+                        `;
+                        itemsTableBody.appendChild(totalRow);
+                        
+                        itemsTable.style.display = 'table';
+                        viewResult.style.display = 'none';
+                    }
+                } else {
+                    const errorData = await response.json();
+                    showResult(`<strong>Error ${response.status}:</strong> ${errorData.detail}`, 'error', viewResult);
+                    itemsTable.style.display = 'none';
+                }
+            } catch (error) {
+                showResult(`<strong>Network Error:</strong> ${error.message}`, 'error', viewResult);
+                itemsTable.style.display = 'none';
+            } finally {
+                viewLoading.style.display = 'none';
+            }
+        }
+        
+        function showResult(message, type, element) {
+            element.innerHTML = message;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
         }
         
         function isValidUUID(uuid) {
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
             return uuidRegex.test(uuid);
         }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            const exampleBtn = document.createElement('button');
-            exampleBtn.textContent = 'Fill with Example Data';
-            exampleBtn.type = 'button';
-            exampleBtn.style.backgroundColor = '#2196F3';
-            exampleBtn.style.marginTop = '10px';
-            exampleBtn.onclick = function() {
-                document.getElementById('orderId').value = '123e4567-e89b-12d3-a456-426614174000';
-                document.getElementById('productId').value = '123e4567-e89b-12d3-a456-426614174001';
-                document.getElementById('quantity').value = '2';
-            };
-            document.querySelector('form').appendChild(exampleBtn);
-        });
     </script>
 </body>
 </html>

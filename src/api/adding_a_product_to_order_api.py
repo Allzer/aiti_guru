@@ -1,10 +1,12 @@
 from uuid import UUID
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, PositiveInt
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
+from src.api.schemas import OrderItemResponse
 from database import SessionDep
 from src.models.models_for_tz import Order, Product, OrderItem
     
@@ -108,3 +110,20 @@ async def get_order_and_product_id(session: SessionDep):
             status_code=500,
             detail='Не удалось выполнить чтение из БД'
         )
+
+@router.get("/orders/{order_id}/items", response_model=List[OrderItemResponse])
+async def get_order_items(order_id: UUID, session: SessionDep):
+    
+    query = select(OrderItem).where(OrderItem.order_id == order_id).options(joinedload(OrderItem.product))
+    result = await session.execute(query)
+    order_items = result.scalars().all()
+    
+    return [
+        OrderItemResponse(
+            order_id=item.order_id,
+            product_id=item.product_id,
+            quantity=item.quantity,
+            price_at_order=item.price_at_order,
+            product_name=item.product.name
+        ) for item in order_items
+    ]
