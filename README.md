@@ -113,9 +113,12 @@
     
 # Пункт 3
 Для запуска всего:
+Первое
 
     python -m venv venv
-    
+Второе
+
     source venv/bin/activate
-    
+Третье
+
     make
