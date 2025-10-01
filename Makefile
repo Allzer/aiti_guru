@@ -1,4 +1,4 @@
-all: install_lib create_db create_data
+all: install_lib create_db
 
 install_lib:
 	pip install -r requirements.txt
@@ -7,4 +7,4 @@ install_lib:
 create_db:
 	python create_db.py
 	alembic upgrade head
-	python src\scripts\scripts.py
+	python src/scripts/scripts.py
