@@ -113,6 +113,7 @@
     
 # Пункт 3
 Для запуска всего:
+
 Первое
 
     python -m venv venv
@@ -122,3 +123,10 @@
 Третье
 
     make
+Четвёртое
+
+    python run.py
+
+Также для запуска можно использовать Docker:
+
+    docker compose up --build
