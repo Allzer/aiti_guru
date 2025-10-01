@@ -17,9 +17,9 @@
   Пункт 2.2
 
     SELECT 
-    parent.id,
-    parent.name,
-    COUNT(child.id) AS direct_children_count
+      parent.id,
+      parent.name,
+      COUNT(child.id) AS direct_children_count
     FROM categories parent
     LEFT JOIN categories child ON child.parent_id = parent.id
     GROUP BY parent.id, parent.name;
