@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product to Order</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus, input[type="number"]:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            display: none;
+        }
+        .api-info {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Add Product to Order</h1>
+        
+        <div class="api-info">
+            <strong>API Endpoint:</strong> POST /orders/{order_id}/items<br>
+            <strong>Function:</strong> Adds a product to an order. If the item already exists, increases quantity.
+        </div>
+
+        <form id="addProductForm">
+            <div class="form-group">
+                <label for="orderId">Order ID (UUID):</label>
+                <input type="text" id="orderId" name="orderId" required 
+                       placeholder="e.g., 123e4567-e89b-12d3-a456-426614174000">
+            </div>
+            
+            <div class="form-group">
+                <label for="productId">Product ID (UUID):</label>
+                <input type="text" id="productId" name="productId" required 
+                       placeholder="e.g., 123e4567-e89b-12d3-a456-426614174000">
+            </div>
+            
+            <div class="form-group">
+                <label for="quantity">Quantity:</label>
+                <input type="number" id="quantity" name="quantity" required 
+                       min="1" value="1">
+            </div>
+            
+            <button type="submit" id="submitBtn">Add Product to Order</button>
+        </form>
+
+        <div class="loading" id="loading">
+            Processing your request...
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('addProductForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            const orderId = document.getElementById('orderId').value.trim();
+            const productId = document.getElementById('productId').value.trim();
+            const quantity = document.getElementById('quantity').value;
+            
+            if (!isValidUUID(orderId)) {
+                showResult('Please enter a valid Order UUID', 'error');
+                return;
+            }
+            
+            if (!isValidUUID(productId)) {
+                showResult('Please enter a valid Product UUID', 'error');
+                return;
+            }
+            
+            if (quantity < 1) {
+                showResult('Quantity must be at least 1', 'error');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            try {
+                const response = await fetch(`/orders/${orderId}/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                        quantity: parseInt(quantity)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`
+                        <strong>Success!</strong> Product added to order.
+                        <br><br>
+                        <strong>Details:</strong><br>
+                        - Order ID: ${data.order_id}<br>
+                        - Product ID: ${data.product_id}<br>
+                        - Quantity: ${data.quantity}<br>
+                        - Price: $${data.price_at_order}<br>
+                        - Product Name: ${data.product_name || 'N/A'}<br>
+                        - Item ${data.created ? 'Created' : 'Quantity Updated'}
+                    `, 'success');
+                } else {
+                    showResult(`<strong>Error ${response.status}:</strong> ${data.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult(`<strong>Network Error:</strong> ${error.message}`, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+        
+        function showResult(message, type) {
+            const result = document.getElementById('result');
+            result.innerHTML = message;
+            result.className = `result ${type}`;
+            result.style.display = 'block';
+        }
+        
+        function isValidUUID(uuid) {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+            return uuidRegex.test(uuid);
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const exampleBtn = document.createElement('button');
+            exampleBtn.textContent = 'Fill with Example Data';
+            exampleBtn.type = 'button';
+            exampleBtn.style.backgroundColor = '#2196F3';
+            exampleBtn.style.marginTop = '10px';
+            exampleBtn.onclick = function() {
+                document.getElementById('orderId').value = '123e4567-e89b-12d3-a456-426614174000';
+                document.getElementById('productId').value = '123e4567-e89b-12d3-a456-426614174001';
+                document.getElementById('quantity').value = '2';
+            };
+            document.querySelector('form').appendChild(exampleBtn);
+        });
+    </script>
+</body>
+</html>

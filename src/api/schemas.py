@@ -1,4 +1,3 @@
-# schemas.py
 from pydantic import BaseModel, PositiveInt
 from typing import Optional
 
