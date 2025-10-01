@@ -112,3 +112,10 @@
     LIMIT 5;
     
 # Пункт 3
+Для запуска всего:
+
+    python -m venv venv
+    
+    source venv/bin/activate
+    
+    make
