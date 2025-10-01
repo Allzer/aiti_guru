@@ -4,7 +4,7 @@
 # Пункт 2
   Пункт 2.1
 
-      SELECT
+    SELECT
       c.id,
       c.name AS client_name,
       COALESCE(SUM(oi.quantity * oi.price_at_order), 0) AS total_amount
