@@ -1,7 +1,3 @@
-# src/api/adding_a_product_to_order_api.py
-# Примечание: бизнес-логику (транзакция, проверки) можно вынести в отдельный файл, например src/services/order_service.py
-# Примечание: Pydantic-схемы запроса/ответа можно вынести/импортировать из src.api.schemas.py
-
 from uuid import UUID
 from typing import Optional
 
@@ -34,7 +30,6 @@ async def add_item_to_order(
     """
     try:
         async with session.begin():
-            # Проверяем, что заказ существует
             q = select(Order).where(Order.id == order_id)
             res = await session.execute(q)
             order = res.scalar_one_or_none()
@@ -88,8 +83,6 @@ async def add_item_to_order(
             "product_name": getattr(order_item, "product", None).name if getattr(order_item, "product", None) else None,
             "created": created
         }
-    except HTTPException:
-        raise
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
 
@@ -97,3 +90,21 @@ async def add_item_to_order(
 async def read_index():
     with open("src/api/templates/interface.html", "r") as f:
         return HTMLResponse(content=f.read())
+    
+@router.get('/get_order_and_product_id')
+async def get_order_and_product_id(session: SessionDep):
+    try:
+        orders = await session.execute(select(Order.id))
+        products = await session.execute(select(Product.id))
+
+        result_order = [{'id_ord': order_id} for order_id in orders.scalars()]
+        result_prod = [{'id_prod': prod_id} for prod_id in products.scalars()]
+
+        return result_order, result_prod
+
+    except Exception as e:
+        print(f"Database error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail='Не удалось выполнить чтение из БД'
+        )
